@@ -1,0 +1,21 @@
+# 依赖与构建产物
+node_modules/
+dist/
+.check/
+.vite/
+*.log
+
+# 本地配置（可能含索引服务 Token，绝不入库）
+config/app.config.json
+.npmrc
+
+# 打包产物
+*.zip
+/offline/
+/offline-src/
+
+# 编辑器 / 系统
+.DS_Store
+.idea/
+.vscode/
+Thumbs.db

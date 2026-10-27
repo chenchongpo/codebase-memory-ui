@@ -1,0 +1,24 @@
+{
+  "cbm": {
+    "cacheDir": "D:/cbm-cache",
+    "sourceRoot": "",
+    "transport": "http",
+    "endpoint": "http://127.0.0.1:7801/mcp",
+    "token": "",
+    "exePath": "",
+    "runtimeDir": "",
+    "timeoutMs": 180000,
+    "defaultProject": ""
+  },
+  "index": {
+    "repoPath": "",
+    "mode": "full",
+    "name": "",
+    "lastProject": ""
+  },
+  "analysis": {
+    "excludeDirs": ["generated"],
+    "testPatterns": ["(^|/)mock(s)?/"],
+    "deadcodeExclude": ["@InternalApi", "^com\\.yourcompany\\.legacy\\."]
+  }
+}

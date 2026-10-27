@@ -1,0 +1,32 @@
+{
+  "name": "codebase-memory-ui",
+  "version": "0.4.0",
+  "private": true,
+  "type": "module",
+  "description": "Codebase Insight — 把代码图数据库变成可读的十张视图：复杂度、重复、无引用、调用链、依赖与分层、接口地图",
+  "keywords": ["code-analysis", "call-graph", "dependency-graph", "tree-sitter", "mcp", "sqlite", "react", "vite"],
+  "license": "MIT",
+  "scripts": {
+    "dev": "node scripts/dev.mjs",
+    "web": "vite",
+    "api": "node --experimental-sqlite server/index.mjs",
+    "build": "vite build",
+    "start": "node --experimental-sqlite server/index.mjs --serve-dist",
+    "check": "node scripts/check.mjs"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.4",
+    "jsdom": "^30.1.2",
+    "typescript": "^5.6.3",
+    "vite": "^5.4.11"
+  },
+  "engines": {
+    "node": ">=22.5"
+  }
+}
