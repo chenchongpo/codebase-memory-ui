@@ -126,7 +126,6 @@ export default function Chains({ project, payload, nav, openSource }: ViewProps)
   const canvas = useMemo(() => buildSequenceCanvas(chains), [chains]);
   /** 明细表点中的链路序号：不切换画布内容，只让画布滚到并高亮那一条 */
   const selNo = Math.min(chainSel, Math.max(0, chains.length - 1));
-  const targetIds = (cur?.matched ?? []).map((m) => m.id);
 
   const run = (text?: string) => {
     setQ((text ?? '').trim());
@@ -232,6 +231,8 @@ export default function Chains({ project, payload, nav, openSource }: ViewProps)
           help={
             <>
               模块 → 包 → 类 → 方法逐层下钻；点类右侧「查」可跳过方法直接查整个类。
+              <br />
+              <b>深度 = 调用层数</b>（不是部署包引用层级）：a 调 b、b 里调 c 算 2 层——深度 1 只展示 b，深度 2 展示 b 和 c。
               <HelpLink onClick={() => nav('metrics', { query: 'chain', token: Date.now() })}>调用链与解析溯源口径</HelpLink>
             </>
           }
@@ -245,9 +246,13 @@ export default function Chains({ project, payload, nav, openSource }: ViewProps)
                   ↓ 正向时序
                 </button>
               </div>
-              <select value={depth} onChange={(e) => setDepth(Number(e.target.value))} title="展开层数">
+              <select
+                value={depth}
+                onChange={(e) => setDepth(Number(e.target.value))}
+                title="调用深度（按调用次数计，与部署包层级无关）：a 调 b、b 里调 c = 2 层；深度 1 只展示 b，深度 2 展示 b 和 c"
+              >
                 {DEPTHS.map((n) => (
-                  <option key={n} value={n}>{n} 层</option>
+                  <option key={n} value={n}>深度 {n} 层</option>
                 ))}
               </select>
               <button className="btn sm" disabled={trail.length <= 1} onClick={() => gotoCrumb(trail.length - 2)} title="回到上一层目录">

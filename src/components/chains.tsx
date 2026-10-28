@@ -16,6 +16,10 @@ function Defs({ color = '#5a6a8a' }: { color?: string }) {
 
 const cut = (s: string, n: number) => (s.length > n ? `${s.slice(0, n - 1)}…` : s);
 
+/** 调用深度配色：L1 最浅（绿）→ 越深越紫，与复杂度分档色一致 */
+const DEPTH_COLORS = ['#3ddc97', '#56b6ff', '#ffc857', '#ff8a5c', '#d16bff'];
+const depthColor = (d: number) => DEPTH_COLORS[Math.min(Math.max(d - 1, 0), DEPTH_COLORS.length - 1)];
+
 /* ======================================================== 合并时序画布（全部链路） */
 
 const CV_PAD = 14;
@@ -61,8 +65,10 @@ export function sequenceCanvasSize(model: SeqCanvasModel) {
 /**
  * 合并时序画布：**全部链路堆在一张画布里**，而不是一次只画一条再翻页。
  *
- * 关键设计是「列对齐」：参与者列由所有链路合并排序（高频类靠左），
- * 于是纵向扫同一列就能看出这个类在各条链路里分别在第几步被调用 —— 这是逐条翻页给不了的。
+ * 两个组织原则：
+ *   - 调用时序：参与者列按首次被调顺序排，入口类最左、越右越深；单条链从左到右就是调用顺序；
+ *   - 调用深度：每条消息左侧标 L n（n = 第几层调用），配深浅色阶，扫一眼就能看出链路钻了多深。
+ * 加上「同类同列」，纵向扫同一列还能看出这个类在各条链路里分别在第几层被调用。
  *
  * 规模靠三件事消化：① 每行 26px 的紧凑行高；② 行数上限（超出不画并提示，避免画卡）；
  * ③ 缩放：默认按容器宽度适应，可 10%–250% 调；点明细表某行会滚到并高亮对应链路带。
@@ -114,7 +120,7 @@ export function SequenceCanvas({
         <svg className="chart" viewBox={`0 0 ${lay.width} ${lay.height}`} preserveAspectRatio="xMidYMin meet" style={svgStyle}>
           <Defs />
 
-          {/* 参与者表头：只画一次，靠列对齐在长画布里保持可比 */}
+          {/* 参与者表头：只画一次，靠列对齐在长画布里保持可比；列序 = 调用时序（左浅右深） */}
           {model.participants.map((p, c) => {
             const cx = xOf(c);
             return (
@@ -132,7 +138,7 @@ export function SequenceCanvas({
                   {cut(p.name, 20)}
                 </text>
                 <text x={cx} y={CV_PAD + 25} textAnchor="middle" style={{ fill: 'var(--fg-faint)', fontSize: 8.5, fontFamily: 'var(--mono)' }}>
-                  {c + 1}
+                  {`#${c + 1} · ×${p.freq}`}
                 </text>
               </g>
             );
@@ -213,7 +219,15 @@ export function SequenceCanvas({
                       style={{ cursor: onOpen ? 'pointer' : 'default' }}
                       onClick={() => onOpen && onOpen(m.fromStep.file, m.line || m.fromStep.line)}
                     >
-                      <title>{`#${b.index + 1} ${viaHint(m.toStep.via) || `${m.toStep.cls || ''}.${m.toStep.name}`}`}</title>
+                      <title>{`#${b.index + 1} 第 ${m.i} 层调用 · ${viaHint(m.toStep.via) || `${m.toStep.cls || ''}.${m.toStep.name}`}`}</title>
+                      {/* 左侧深度标：L1 = 入口的直接调用，颜色随深度由浅变深 */}
+                      <text
+                        x={CV_PAD + 4}
+                        y={y + 3.5}
+                        style={{ fill: active ? 'var(--fg)' : depthColor(m.i), fontSize: 8, fontFamily: 'var(--mono)', opacity: active ? 1 : 0.9 }}
+                      >
+                        {`L${m.i}`}
+                      </text>
                       {self ? (
                         <>
                           <path
@@ -272,7 +286,8 @@ export function SequenceCanvas({
 
       <div className="legend">
         <span className="legend-item">
-          一次画出全部 {model.bands.length} 条链路，竖着堆叠、<b>同类同列</b>对齐；左侧 <code>#n</code> = 明细表行号
+          一次画出全部 {model.bands.length} 条链路，竖着堆叠、<b>同类同列</b>对齐；参与者<b>按调用时序排</b>（左 = 入口，越右被调得越晚），
+          左侧 <code>#n</code> = 明细表行号，<code>L n</code> = 第 n 层调用（颜色由浅到深）
         </span>
         <span className="legend-item">
           <span style={{ borderBottom: '1px dashed var(--warn)', paddingBottom: 1 }}>黄色虚线</span> = 接口 → 实现派发（OVERRIDE）

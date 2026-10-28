@@ -166,10 +166,12 @@ export interface SeqParticipant {
   /** 参与的消息序号（从 1 起） */
   first: number;
   last: number;
+  /** 参与的链路条数（表头展示 ×n） */
+  freq: number;
 }
 
 export interface SeqMessage {
-  /** 第几条消息（从 1 起） */
+  /** 第几条消息（从 1 起）；等于调用深度：L1 = 入口的直接调用 */
   i: number;
   from: number;
   to: number;
@@ -220,7 +222,11 @@ export interface SeqBand {
 }
 
 export interface SeqCanvasModel {
-  /** 跨所有链路合并的参与者列，按出现频次排序（高频类靠左，列位稳定） */
+  /**
+   * 跨所有链路合并的参与者列，**按调用时序排序**：
+   * 沿链路扫描的首次出现顺序 = 入口类最左，越靠右被调得越晚（近似调用深度递增方向）。
+   * 单条链的参与者从左到右正好是调用顺序；多链合并时同类始终同列，纵向可比。
+   */
   participants: SeqParticipant[];
   bands: SeqBand[];
   /** 全部消息行数，决定画布高度 */
@@ -237,7 +243,7 @@ export interface SeqCanvasModel {
 export function buildSequenceCanvas(chains: CallChain[], maxRows = 4000): SeqCanvasModel {
   const keyOf = (s: ChainStep) => s.cls || s.label || s.name;
 
-  /* 1. 先统计参与者频次，决定列序：频次高的靠左，同频按首次出现顺序 */
+  /* 1. 参与者列序 = 调用时序（首次出现顺序）；频次只用于表头的 ×n 展示 */
   const freq = new Map<string, number>();
   const firstSeen = new Map<string, number>();
   let seen = 0;
@@ -249,13 +255,13 @@ export function buildSequenceCanvas(chains: CallChain[], maxRows = 4000): SeqCan
     }
   }
   const ordered = [...freq.keys()].sort(
-    (a, b) => (freq.get(b) ?? 0) - (freq.get(a) ?? 0) || (firstSeen.get(a) ?? 0) - (firstSeen.get(b) ?? 0) || a.localeCompare(b)
+    (a, b) => (firstSeen.get(a) ?? 0) - (firstSeen.get(b) ?? 0) || a.localeCompare(b)
   );
   const col = new Map(ordered.map((k, i) => [k, i]));
 
   const participants: SeqParticipant[] = ordered.map((k) => {
     const sample = chains.flatMap((c) => c.steps).find((s) => keyOf(s) === k);
-    return { key: k, cls: sample?.cls ?? '', name: sample?.cls || k, first: 0, last: 0 };
+    return { key: k, cls: sample?.cls ?? '', name: sample?.cls || k, first: 0, last: 0, freq: freq.get(k) ?? 0 };
   });
 
   /* 2. 逐链生成消息，列号用全局表，保证同类同列 */
